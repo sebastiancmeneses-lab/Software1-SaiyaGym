@@ -13,13 +13,25 @@ export class ApiError extends Error {
   }
 }
 
+// Sesión actual: la define AuthProvider (token y qué hacer si el servidor la rechaza).
+let tokenActual = null;
+let alVencerSesion = null;
+
+export function configurarSesion({ token, alVencer }) {
+  if (token !== undefined) tokenActual = token;
+  if (alVencer !== undefined) alVencerSesion = alVencer;
+}
+
 async function solicitar(metodo, ruta, cuerpo) {
   let respuesta;
+
+  const encabezados = { "Content-Type": "application/json" };
+  if (tokenActual) encabezados.Authorization = `Bearer ${tokenActual}`;
 
   try {
     respuesta = await fetch(`${BASE}${ruta}`, {
       method: metodo,
-      headers: { "Content-Type": "application/json" },
+      headers: encabezados,
       body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
     });
   } catch {
@@ -39,6 +51,16 @@ async function solicitar(metodo, ruta, cuerpo) {
 
   if (!respuesta.ok || !json || json.ok !== true) {
     const detalle = json?.error;
+
+    // Sesión inexistente o vencida (pero no un simple error de contraseña en el login).
+    if (
+      respuesta.status === 401 &&
+      tokenActual &&
+      alVencerSesion &&
+      ["SESION_INVALIDA", "NO_AUTENTICADO"].includes(detalle?.codigo)
+    ) {
+      alVencerSesion();
+    }
 
     throw new ApiError(
       detalle?.mensaje ||
@@ -64,13 +86,17 @@ function conParametros(ruta, parametros = {}) {
 }
 
 export const api = {
+  auth: {
+    login: (documento, contrasena) =>
+      solicitar("POST", "/auth/login", { documento, contrasena }),
+    yo: () => solicitar("GET", "/auth/yo"),
+  },
   usuarios: {
     listar: (parametros) => solicitar("GET", conParametros("/usuarios", parametros)),
     registrar: (datos) => solicitar("POST", "/usuarios", datos),
     actualizar: (id, datos) => solicitar("PUT", `/usuarios/${id}`, datos),
     cambiarEstado: (id, estado) =>
       solicitar("PATCH", `/usuarios/${id}/estado`, { estado }),
-    rutinaAsignada: (id) => solicitar("GET", `/usuarios/${id}/rutina`),
   },
   rutinas: {
     listar: () => solicitar("GET", "/rutinas"),
@@ -80,5 +106,9 @@ export const api = {
   },
   asignaciones: {
     asignar: (datos) => solicitar("POST", "/asignaciones", datos),
+    usuarios: () => solicitar("GET", "/asignaciones/usuarios"),
+  },
+  miRutina: {
+    consultar: () => solicitar("GET", "/mi-rutina"),
   },
 };

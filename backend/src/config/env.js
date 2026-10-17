@@ -20,4 +20,8 @@ export const config = {
     user: process.env.DB_USER || "postgres",
     password: process.env.DB_PASSWORD || "",
   },
+  jwt: {
+    secreto: process.env.JWT_SECRET || "",
+    expira: process.env.JWT_EXPIRA || "8h",
+  },
 };

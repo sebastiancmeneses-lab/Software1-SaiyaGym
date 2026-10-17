@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../auth/useAuth.js";
 import { api } from "../services/api.js";
 
 const ROLES = [
@@ -17,12 +18,14 @@ const formularioInicial = {
   telefono: "",
   correo: "",
   rol: "usuario",
+  contrasena: "",
 };
 
 // Sprint 1 - E1: registrar, consultar, actualizar y gestionar el estado.
 // Las reglas de negocio las valida el backend; aquí solo se muestran
 // los mensajes que devuelve la API.
 function UsuariosPage({ notificar }) {
+  const { usuario: sesion } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [resumen, setResumen] = useState({ total: 0, activos: 0, inactivos: 0 });
   const [cargando, setCargando] = useState(true);
@@ -124,6 +127,7 @@ function UsuariosPage({ notificar }) {
       telefono: usuario.telefono,
       correo: usuario.correo,
       rol: usuario.rol,
+      contrasena: "", // vacía = se conserva la contraseña actual
     });
 
     setEditando(usuario.id);
@@ -287,6 +291,25 @@ function UsuariosPage({ notificar }) {
                 </option>
               ))}
             </select>
+          </label>
+
+          <label
+            className={`campo-completo ${errores.contrasena ? "campo-error" : ""}`}
+          >
+            {editando !== null ? "Nueva contraseña (opcional)" : "Contraseña"}
+            <input
+              type="password"
+              name="contrasena"
+              placeholder={
+                editando !== null
+                  ? "Déjala vacía para conservar la actual"
+                  : "Mínimo 8 caracteres, con letras y números"
+              }
+              value={formulario.contrasena}
+              onChange={manejarCambio}
+              autoComplete="new-password"
+              aria-invalid={Boolean(errores.contrasena)}
+            />
           </label>
 
           <div className="acciones-formulario">
@@ -454,6 +477,12 @@ function UsuariosPage({ notificar }) {
                           className="boton-estado"
                           type="button"
                           onClick={() => cambiarEstado(usuario)}
+                          disabled={usuario.id === sesion.id}
+                          title={
+                            usuario.id === sesion.id
+                              ? "No puedes cambiar el estado de tu propio usuario"
+                              : undefined
+                          }
                         >
                           {usuario.estado === "Activo" ? "Inactivar" : "Activar"}
                         </button>

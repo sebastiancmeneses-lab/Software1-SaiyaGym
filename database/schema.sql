@@ -28,6 +28,12 @@ CREATE TABLE IF NOT EXISTS usuarios (
     CONSTRAINT usuarios_estado_ck    CHECK (estado IN ('Activo', 'Inactivo'))
 );
 
+-- Inicio de sesión: la contraseña se guarda siempre cifrada (hash bcrypt),
+-- nunca en texto plano. Es opcional en la tabla para no romper bases
+-- creadas antes de existir el login; un usuario sin contraseña no puede
+-- ingresar hasta que el administrador se la asigne.
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS contrasena_hash VARCHAR(100);
+
 -- ---------------------------------------------------------------------
 -- RUTINAS (E2-HU1, E2-HU3)
 -- Cada rutina la crea un entrenador (usuario con rol "entrenador").

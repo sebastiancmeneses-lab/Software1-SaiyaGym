@@ -598,6 +598,158 @@ tbody tr:last-child td {
   background: #38352e;
 }
 
+/* ---------- Sesión (encabezado) ---------- */
+
+.sesion {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.sesion-datos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.sesion-datos strong {
+  color: var(--texto);
+  font-size: 14px;
+}
+
+.sesion-datos small {
+  color: var(--dorado);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.boton-estado:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- Inicio de sesión ---------- */
+
+.login-pagina {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.login-tarjeta {
+  width: min(100%, 420px);
+  padding: 32px 28px;
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 20px 60px #0008;
+}
+
+.login-marca h1 {
+  margin: 0;
+  color: var(--dorado-claro);
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 28px;
+  letter-spacing: 3px;
+}
+
+.login-marca p {
+  margin: 4px 0 0;
+  color: var(--texto-suave);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+
+.login-tarjeta h2 {
+  margin: 26px 0 16px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 22px;
+  color: var(--texto);
+}
+
+.login-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.login-formulario label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--texto-suave);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-formulario input {
+  width: 100%;
+  min-width: 0;
+  padding: 14px 15px;
+  border: 1px solid #514936;
+  border-radius: 8px;
+  outline: none;
+  background: #292825;
+  color: var(--texto);
+  font-size: 14px;
+}
+
+.login-formulario input:focus {
+  border-color: var(--dorado);
+  box-shadow: 0 0 0 3px #c5a05220;
+}
+
+.campo-contrasena {
+  position: relative;
+}
+
+.campo-contrasena input {
+  padding-right: 92px;
+}
+
+.boton-ver {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border: 1px solid var(--borde-suave);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dorado-claro);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.login-error {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #7a3b3b;
+  border-radius: 8px;
+  background: #2d1a1a;
+  color: var(--rojo);
+  font-size: 13px;
+}
+
+.login-ayuda {
+  margin: 20px 0 0;
+  color: var(--texto-suave);
+  font-size: 12px;
+  text-align: center;
+}
+
+.cargando {
+  margin: 0;
+  color: var(--texto-suave);
+  text-align: center;
+}
+
 /* ---------- Estado vacío ---------- */
 
 .vacio {
@@ -963,6 +1115,16 @@ tbody tr:last-child td {
     width: 100%;
   }
 
+  .sesion {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .sesion-datos {
+    align-items: flex-start;
+  }
+
   .navegacion-item {
     flex: 1 1 calc(50% - 8px);
   }
@@ -1060,4 +1222,36 @@ tbody tr:last-child td {
     transition: none !important;
     animation: none !important;
   }
+}
+
+.detalle-rutina + .acciones-formulario {
+  margin-top: 20px;
+}
+
+/* ---------- Logo ---------- */
+
+.marca-logo {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px #0008);
+}
+
+.login-marca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.login-logo {
+  width: min(190px, 55%);
+  height: auto;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 8px 20px #c5a05230);
+}
+
+.login-tarjeta h2 {
+  text-align: center;
 }

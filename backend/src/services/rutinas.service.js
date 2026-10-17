@@ -1,9 +1,9 @@
 import { conTransaccion } from "../config/db.js";
 import * as repositorio from "../repositories/rutinas.repository.js";
-import * as usuarios from "../repositories/usuarios.repository.js";
 import { AppError, leerId } from "../utils/AppError.js";
 
 // Capa de lógica de negocio de rutinas (Sprint 2: E2-HU1 y E2-HU3).
+// Solo los entrenadores llegan aquí (lo controla el middleware).
 
 const comoTexto = (valor) =>
   typeof valor === "string" || typeof valor === "number"
@@ -19,12 +19,10 @@ const entero = (valor) => {
 function validarRutina(cuerpo) {
   const nombre = comoTexto(cuerpo?.nombre).replace(/\s+/g, " ");
   const objetivo = comoTexto(cuerpo?.objetivo).replace(/\s+/g, " ");
-  const entrenadorTexto = comoTexto(cuerpo?.entrenador_id);
 
   const faltantes = [];
   if (!nombre) faltantes.push(["nombre", "Nombre de la rutina"]);
   if (!objetivo) faltantes.push(["objetivo", "Objetivo"]);
-  if (!entrenadorTexto) faltantes.push(["entrenador_id", "Entrenador"]);
 
   if (faltantes.length > 0) {
     throw new AppError(
@@ -45,8 +43,6 @@ function validarRutina(cuerpo) {
       ["nombre", "objetivo"]
     );
   }
-
-  const entrenadorId = leerId(entrenadorTexto, "entrenador");
 
   const lista = Array.isArray(cuerpo?.ejercicios) ? cuerpo.ejercicios : [];
 
@@ -108,34 +104,18 @@ function validarRutina(cuerpo) {
     return ejercicio;
   });
 
-  return { nombre, objetivo, entrenadorId, ejercicios };
+  return { nombre, objetivo, ejercicios };
 }
 
-/** El entrenador debe existir, estar activo y tener rol "entrenador". */
-async function exigirEntrenadorValido(entrenadorId) {
-  const entrenador = await usuarios.obtenerPorId(entrenadorId);
-
-  if (
-    !entrenador ||
-    entrenador.rol !== "entrenador" ||
-    entrenador.estado !== "Activo"
-  ) {
-    throw new AppError(
-      400,
-      "ENTRENADOR_INVALIDO",
-      "Selecciona un entrenador activo para la rutina.",
-      ["entrenador_id"]
-    );
-  }
-}
-
-// E2-HU1
-export async function crear(cuerpo) {
+// E2-HU1: la rutina queda a nombre del entrenador que la crea.
+export async function crear(cuerpo, entrenador) {
   const datos = validarRutina(cuerpo);
-  await exigirEntrenadorValido(datos.entrenadorId);
 
   const id = await conTransaccion(async (cliente) => {
-    const rutinaId = await repositorio.crear(cliente, datos);
+    const rutinaId = await repositorio.crear(cliente, {
+      ...datos,
+      entrenadorId: entrenador.id,
+    });
     await repositorio.reemplazarEjercicios(cliente, rutinaId, datos.ejercicios);
     return rutinaId;
   });
@@ -158,7 +138,7 @@ export async function obtener(idCrudo) {
   return rutina;
 }
 
-// E2-HU3
+// E2-HU3: cualquier entrenador del gimnasio puede ajustar una rutina.
 export async function actualizar(idCrudo, cuerpo) {
   const id = leerId(idCrudo, "id de rutina");
   const existente = await repositorio.obtenerPorId(id);
@@ -168,7 +148,6 @@ export async function actualizar(idCrudo, cuerpo) {
   }
 
   const datos = validarRutina(cuerpo);
-  await exigirEntrenadorValido(datos.entrenadorId);
 
   await conTransaccion(async (cliente) => {
     await repositorio.actualizar(cliente, id, datos);

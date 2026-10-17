@@ -16,12 +16,13 @@ export async function crear(cliente, { nombre, objetivo, entrenadorId }) {
   return rows[0].id;
 }
 
-export async function actualizar(cliente, id, { nombre, objetivo, entrenadorId }) {
+// El entrenador creador no cambia al modificar la rutina.
+export async function actualizar(cliente, id, { nombre, objetivo }) {
   await cliente.query(
     `UPDATE rutinas
-        SET nombre = $2, objetivo = $3, entrenador_id = $4, actualizado_en = now()
+        SET nombre = $2, objetivo = $3, actualizado_en = now()
       WHERE id = $1`,
-    [id, nombre, objetivo, entrenadorId]
+    [id, nombre, objetivo]
   );
 }
 

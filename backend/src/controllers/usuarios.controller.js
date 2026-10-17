@@ -1,5 +1,4 @@
 import * as servicio from "../services/usuarios.service.js";
-import * as asignaciones from "../services/asignaciones.service.js";
 import { enviar } from "../utils/respuestas.js";
 
 // Los controladores solo reciben la petición, llaman al servicio
@@ -20,19 +19,15 @@ export async function obtener(req, res) {
 }
 
 export async function actualizar(req, res) {
-  const usuario = await servicio.actualizar(req.params.id, req.body);
+  const usuario = await servicio.actualizar(req.params.id, req.body, req.usuario);
   enviar(res, 200, usuario, { mensaje: "Usuario actualizado correctamente." });
 }
 
 export async function cambiarEstado(req, res) {
-  const usuario = await servicio.cambiarEstado(req.params.id, req.body);
+  const usuario = await servicio.cambiarEstado(req.params.id, req.body, req.usuario);
   const accion = usuario.estado === "Activo" ? "activado" : "inactivado";
 
   enviar(res, 200, usuario, {
     mensaje: `${usuario.nombre} fue ${accion} correctamente.`,
   });
-}
-
-export async function rutinaAsignada(req, res) {
-  enviar(res, 200, await asignaciones.consultarRutinaDeUsuario(req.params.id));
 }

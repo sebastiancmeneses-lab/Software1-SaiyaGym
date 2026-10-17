@@ -2,6 +2,16 @@ import app from "./app.js";
 import { pool } from "./config/db.js";
 import { config } from "./config/env.js";
 
+// Sin una clave de firma segura no se puede iniciar: las sesiones
+// quedarían sin protección.
+if (config.jwt.secreto.length < 16) {
+  console.error(
+    "Falta JWT_SECRET en backend/.env (mínimo 16 caracteres).\n" +
+      "Copia el valor de ejemplo de .env.example y cámbialo por una frase larga y propia."
+  );
+  process.exit(1);
+}
+
 const servidor = app.listen(config.puerto, async () => {
   console.log(`API de SAIYAGYM escuchando en http://localhost:${config.puerto}`);
 

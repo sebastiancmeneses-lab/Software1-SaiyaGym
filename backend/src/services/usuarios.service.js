@@ -1,7 +1,13 @@
 import * as repositorio from "../repositories/usuarios.repository.js";
 import { AppError, leerId } from "../utils/AppError.js";
+import {
+  MENSAJE_CONTRASENA,
+  cifrarContrasena,
+  contrasenaValida,
+} from "./auth.service.js";
 
 // Capa de lógica de negocio del módulo de usuarios (Sprint 1).
+// Solo el administrador puede llegar aquí (lo controla el middleware).
 
 const ETIQUETAS = {
   nombre: "Nombre completo",
@@ -22,8 +28,12 @@ const comoTexto = (valor) =>
     ? String(valor).trim()
     : "";
 
-/** Valida y limpia los datos de un usuario. Lanza AppError si algo falla. */
-function validarUsuario(cuerpo) {
+/**
+ * Valida y limpia los datos de un usuario. Lanza AppError si algo falla.
+ * Al registrar (contrasenaObligatoria = true) la contraseña es requerida;
+ * al actualizar es opcional (si viene, reemplaza la anterior).
+ */
+function validarUsuario(cuerpo, { contrasenaObligatoria }) {
   const datos = {
     nombre: comoTexto(cuerpo?.nombre).replace(/\s+/g, " "),
     documento: comoTexto(cuerpo?.documento).toUpperCase(),
@@ -32,15 +42,22 @@ function validarUsuario(cuerpo) {
     rol: comoTexto(cuerpo?.rol).toLowerCase() || "usuario",
   };
 
+  const contrasena =
+    typeof cuerpo?.contrasena === "string" ? cuerpo.contrasena : "";
+
   const faltantes = Object.keys(ETIQUETAS).filter((campo) => !datos[campo]);
+  const etiquetasFaltantes = faltantes.map((campo) => ETIQUETAS[campo]);
+
+  if (contrasenaObligatoria && !contrasena) {
+    faltantes.push("contrasena");
+    etiquetasFaltantes.push("Contraseña");
+  }
 
   if (faltantes.length > 0) {
     throw new AppError(
       400,
       "DATOS_INCOMPLETOS",
-      `Faltan campos obligatorios: ${faltantes
-        .map((campo) => ETIQUETAS[campo])
-        .join(", ")}.`,
+      `Faltan campos obligatorios: ${etiquetasFaltantes.join(", ")}.`,
       faltantes
     );
   }
@@ -73,6 +90,10 @@ function validarUsuario(cuerpo) {
     problemas.push(["rol", "El rol debe ser administrador, entrenador o usuario."]);
   }
 
+  if (contrasena && !contrasenaValida(contrasena)) {
+    problemas.push(["contrasena", MENSAJE_CONTRASENA]);
+  }
+
   if (problemas.length > 0) {
     throw new AppError(
       400,
@@ -82,7 +103,7 @@ function validarUsuario(cuerpo) {
     );
   }
 
-  return datos;
+  return { datos, contrasena };
 }
 
 async function exigirNoDuplicado(documento, excluirId = null) {
@@ -110,10 +131,15 @@ async function exigirExistente(id) {
 
 // E1-HU1
 export async function registrar(cuerpo) {
-  const datos = validarUsuario(cuerpo);
+  const { datos, contrasena } = validarUsuario(cuerpo, {
+    contrasenaObligatoria: true,
+  });
   await exigirNoDuplicado(datos.documento);
 
-  return repositorio.crear(datos);
+  return repositorio.crear({
+    ...datos,
+    contrasenaHash: await cifrarContrasena(contrasena),
+  });
 }
 
 // E1-HU2: consultar y buscar por nombre o documento.
@@ -170,18 +196,34 @@ export async function obtener(idCrudo) {
 }
 
 // E1-HU3
-export async function actualizar(idCrudo, cuerpo) {
+export async function actualizar(idCrudo, cuerpo, actor) {
   const id = leerId(idCrudo, "id de usuario");
-  await exigirExistente(id);
+  const existente = await exigirExistente(id);
 
-  const datos = validarUsuario(cuerpo);
+  const { datos, contrasena } = validarUsuario(cuerpo, {
+    contrasenaObligatoria: false,
+  });
+
+  // Evita que el administrador se quite a sí mismo el acceso.
+  if (actor.id === id && datos.rol !== existente.rol) {
+    throw new AppError(
+      409,
+      "ACCION_NO_PERMITIDA",
+      "No puedes cambiar tu propio rol.",
+      ["rol"]
+    );
+  }
+
   await exigirNoDuplicado(datos.documento, id);
 
-  return repositorio.actualizar(id, datos);
+  return repositorio.actualizar(id, {
+    ...datos,
+    contrasenaHash: contrasena ? await cifrarContrasena(contrasena) : null,
+  });
 }
 
 // E1-HU4: se cambia el estado, nunca se elimina el registro.
-export async function cambiarEstado(idCrudo, cuerpo) {
+export async function cambiarEstado(idCrudo, cuerpo, actor) {
   const id = leerId(idCrudo, "id de usuario");
   const estado = comoTexto(cuerpo?.estado);
 
@@ -195,6 +237,14 @@ export async function cambiarEstado(idCrudo, cuerpo) {
   }
 
   await exigirExistente(id);
+
+  if (actor.id === id && estado === "Inactivo") {
+    throw new AppError(
+      409,
+      "ACCION_NO_PERMITIDA",
+      "No puedes inactivar tu propio usuario."
+    );
+  }
 
   return repositorio.cambiarEstado(id, estado);
 }

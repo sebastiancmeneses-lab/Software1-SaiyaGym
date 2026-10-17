@@ -1,21 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import DetalleRutina from "../components/DetalleRutina.jsx";
+import { useAuth } from "../auth/useAuth.js";
 import { api } from "../services/api.js";
 
 const asignacionInicial = { usuario_id: "", rutina_id: "" };
 
-// Rutinas, entrenadores activos y usuarios, en paralelo.
+// Rutinas y usuarios a quienes se puede asignar, en paralelo.
 const pedirDatos = () =>
-  Promise.all([
-    api.rutinas.listar(),
-    api.usuarios.listar({ rol: "entrenador", estado: "Activo" }),
-    api.usuarios.listar({ rol: "usuario" }),
-  ]);
+  Promise.all([api.rutinas.listar(), api.asignaciones.usuarios()]);
 
 // Sprint 2 - E2: crear, modificar y asignar rutinas (vista del entrenador).
 function RutinasPage({ notificar }) {
+  const { usuario: entrenadorActual } = useAuth();
   const [rutinas, setRutinas] = useState([]);
-  const [entrenadores, setEntrenadores] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
@@ -30,7 +27,6 @@ function RutinasPage({ notificar }) {
   const [formulario, setFormulario] = useState({
     nombre: "",
     objetivo: "",
-    entrenador_id: "",
     ejercicios: [{ clave: 1, nombre: "", series: "", repeticiones: "" }],
   });
   const [editando, setEditando] = useState(null);
@@ -48,9 +44,8 @@ function RutinasPage({ notificar }) {
     setRutinas(respuesta.data);
   }, []);
 
-  const aplicarDatos = useCallback(([listaRutinas, listaEntrenadores, listaUsuarios]) => {
+  const aplicarDatos = useCallback(([listaRutinas, listaUsuarios]) => {
     setRutinas(listaRutinas.data);
-    setEntrenadores(listaEntrenadores.data);
     setUsuarios(listaUsuarios.data);
     setErrorCarga(null);
   }, []);
@@ -92,7 +87,6 @@ function RutinasPage({ notificar }) {
     setFormulario({
       nombre: "",
       objetivo: "",
-      entrenador_id: "",
       ejercicios: [
         {
           clave: contadorEjercicios.current,
@@ -149,7 +143,6 @@ function RutinasPage({ notificar }) {
     const datos = {
       nombre: formulario.nombre,
       objetivo: formulario.objetivo,
-      entrenador_id: formulario.entrenador_id,
       ejercicios: formulario.ejercicios.map(
         ({ nombre, series, repeticiones }) => ({ nombre, series, repeticiones })
       ),
@@ -187,7 +180,6 @@ function RutinasPage({ notificar }) {
       setFormulario({
         nombre: data.nombre,
         objetivo: data.objetivo,
-        entrenador_id: String(data.entrenador_id),
         ejercicios: data.ejercicios.map((ejercicio) => {
           contadorEjercicios.current += 1;
 
@@ -310,21 +302,9 @@ function RutinasPage({ notificar }) {
             />
           </label>
 
-          <label className={errores.entrenador_id ? "campo-error" : ""}>
+          <label>
             Entrenador
-            <select
-              name="entrenador_id"
-              value={formulario.entrenador_id}
-              onChange={manejarCambio}
-              aria-invalid={Boolean(errores.entrenador_id)}
-            >
-              <option value="">Selecciona un entrenador</option>
-              {entrenadores.map((entrenador) => (
-                <option key={entrenador.id} value={entrenador.id}>
-                  {entrenador.nombre}
-                </option>
-              ))}
-            </select>
+            <input type="text" value={entrenadorActual.nombre} readOnly />
           </label>
 
           <label
@@ -340,13 +320,6 @@ function RutinasPage({ notificar }) {
               aria-invalid={Boolean(errores.objetivo)}
             />
           </label>
-
-          {!cargando && !errorCarga && entrenadores.length === 0 && (
-            <p className="aviso campo-completo">
-              No hay entrenadores activos. Registra un usuario con rol
-              Entrenador en el módulo Usuarios.
-            </p>
-          )}
 
           <fieldset
             className={`ejercicios ${errores.ejercicios ? "campo-error-bloque" : ""}`}

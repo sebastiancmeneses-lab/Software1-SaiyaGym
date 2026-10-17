@@ -9,6 +9,18 @@ import { AppError, leerId } from "../utils/AppError.js";
 const vacio = (valor) =>
   valor === undefined || valor === null || String(valor).trim() === "";
 
+/** Usuarios del gimnasio (rol "usuario") con los datos mínimos para elegirlos. */
+export async function listarUsuariosAsignables() {
+  const lista = await usuarios.listar({ rol: "usuario" });
+
+  return lista.map(({ id, nombre, documento, estado }) => ({
+    id,
+    nombre,
+    documento,
+    estado,
+  }));
+}
+
 // E2-HU2: asignar una rutina a un usuario.
 export async function asignar(cuerpo) {
   if (vacio(cuerpo?.usuario_id)) {
