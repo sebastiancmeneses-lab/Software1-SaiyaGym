@@ -1,223 +1,77 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import "./App.css";
+import Mensaje from "./components/Mensaje.jsx";
+import MiRutinaPage from "./pages/MiRutinaPage.jsx";
+import RutinasPage from "./pages/RutinasPage.jsx";
+import UsuariosPage from "./pages/UsuariosPage.jsx";
+
+const modulos = [
+  { id: "usuarios", nombre: "Usuarios", perfil: "Administrador", sprint: 1 },
+  { id: "rutinas", nombre: "Rutinas", perfil: "Entrenador", sprint: 2 },
+  { id: "mi-rutina", nombre: "Mi rutina", perfil: "Usuario", sprint: 2 },
+];
 
 function App() {
-  const [usuarios, setUsuarios] = useState([]);
-  const [formulario, setFormulario] = useState({
-    nombre: "",
-    documento: "",
-    telefono: "",
-    correo: "",
-  });
+  const [moduloActivo, setModuloActivo] = useState("usuarios");
+  const [mensaje, setMensaje] = useState(null);
 
-  const [busqueda, setBusqueda] = useState("");
-  const [editando, setEditando] = useState(null);
+  // Cada llamada crea un objeto nuevo para que el aviso se reinicie.
+  const notificar = useCallback((tipo, texto) => {
+    setMensaje({ tipo, texto });
+  }, []);
 
-  const manejarCambio = (e) => {
-    setFormulario({
-      ...formulario,
-      [e.target.name]: e.target.value,
-    });
+  const cerrarMensaje = useCallback(() => setMensaje(null), []);
+
+  const cambiarModulo = (id) => {
+    setModuloActivo(id);
+    setMensaje(null);
   };
 
-  const guardarUsuario = (e) => {
-    e.preventDefault();
-
-    if (
-      !formulario.nombre ||
-      !formulario.documento ||
-      !formulario.telefono ||
-      !formulario.correo
-    ) {
-      alert("Por favor completa todos los campos.");
-      return;
-    }
-
-    if (editando !== null) {
-      setUsuarios(
-        usuarios.map((usuario) =>
-          usuario.id === editando
-            ? { ...usuario, ...formulario }
-            : usuario
-        )
-      );
-
-      setEditando(null);
-    } else {
-      const nuevoUsuario = {
-        id: Date.now(),
-        ...formulario,
-        estado: "Activo",
-      };
-
-      setUsuarios([...usuarios, nuevoUsuario]);
-    }
-
-    setFormulario({
-      nombre: "",
-      documento: "",
-      telefono: "",
-      correo: "",
-    });
-  };
-
-  const editarUsuario = (usuario) => {
-    setFormulario({
-      nombre: usuario.nombre,
-      documento: usuario.documento,
-      telefono: usuario.telefono,
-      correo: usuario.correo,
-    });
-
-    setEditando(usuario.id);
-  };
-
-  const cambiarEstado = (id) => {
-    setUsuarios(
-      usuarios.map((usuario) =>
-        usuario.id === id
-          ? {
-              ...usuario,
-              estado: usuario.estado === "Activo" ? "Inactivo" : "Activo",
-            }
-          : usuario
-      )
-    );
-  };
-
-  const usuariosFiltrados = usuarios.filter(
-    (usuario) =>
-      usuario.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      usuario.documento.includes(busqueda)
-  );
+  const modulo = modulos.find((item) => item.id === moduloActivo);
 
   return (
     <div className="app">
+      <Mensaje mensaje={mensaje} onCerrar={cerrarMensaje} />
+
       <header className="encabezado">
-        <div>
-          <h1>SAIYAGYM</h1>
-          <p>Sistema de gestión para gimnasios</p>
+        <div className="marca">
+          <div className="marca-simbolo">S</div>
+
+          <div>
+            <h1>SAIYAGYM</h1>
+            <p>SISTEMA DE GESTIÓN PARA GIMNASIOS</p>
+          </div>
         </div>
 
-        <span className="modulo">Gestión de usuarios</span>
+        <nav className="navegacion" aria-label="Módulos del sistema">
+          {modulos.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`navegacion-item ${
+                item.id === moduloActivo ? "activa" : ""
+              }`}
+              aria-current={item.id === moduloActivo ? "page" : undefined}
+              onClick={() => cambiarModulo(item.id)}
+            >
+              <span>{item.nombre}</span>
+              <small>{item.perfil}</small>
+            </button>
+          ))}
+        </nav>
       </header>
 
       <main className="contenido">
-        <section className="tarjeta">
-          <h2>{editando ? "Actualizar usuario" : "Registrar usuario"}</h2>
+        {moduloActivo === "usuarios" && <UsuariosPage notificar={notificar} />}
+        {moduloActivo === "rutinas" && <RutinasPage notificar={notificar} />}
+        {moduloActivo === "mi-rutina" && <MiRutinaPage notificar={notificar} />}
 
-          <form onSubmit={guardarUsuario} className="formulario">
-            <input
-              type="text"
-              name="nombre"
-              placeholder="Nombre completo"
-              value={formulario.nombre}
-              onChange={manejarCambio}
-            />
-
-            <input
-              type="text"
-              name="documento"
-              placeholder="Documento"
-              value={formulario.documento}
-              onChange={manejarCambio}
-            />
-
-            <input
-              type="text"
-              name="telefono"
-              placeholder="Teléfono"
-              value={formulario.telefono}
-              onChange={manejarCambio}
-            />
-
-            <input
-              type="email"
-              name="correo"
-              placeholder="Correo electrónico"
-              value={formulario.correo}
-              onChange={manejarCambio}
-            />
-
-            <button type="submit">
-              {editando ? "Guardar cambios" : "Registrar usuario"}
-            </button>
-          </form>
-        </section>
-
-        <section className="tarjeta">
-          <div className="titulo-listado">
-            <h2>Usuarios registrados</h2>
-
-            <input
-              type="text"
-              placeholder="Buscar por nombre o documento..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
-          </div>
-
-          {usuariosFiltrados.length === 0 ? (
-            <p className="vacio">
-              No hay usuarios registrados.
-            </p>
-          ) : (
-            <div className="tabla-contenedor">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Documento</th>
-                    <th>Teléfono</th>
-                    <th>Correo</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {usuariosFiltrados.map((usuario) => (
-                    <tr key={usuario.id}>
-                      <td>{usuario.nombre}</td>
-                      <td>{usuario.documento}</td>
-                      <td>{usuario.telefono}</td>
-                      <td>{usuario.correo}</td>
-                      <td>
-                        <span
-                          className={
-                            usuario.estado === "Activo"
-                              ? "activo"
-                              : "inactivo"
-                          }
-                        >
-                          {usuario.estado}
-                        </span>
-                      </td>
-
-                      <td>
-                        <button
-                          className="boton-editar"
-                          onClick={() => editarUsuario(usuario)}
-                        >
-                          Editar
-                        </button>
-
-                        <button
-                          className="boton-estado"
-                          onClick={() => cambiarEstado(usuario.id)}
-                        >
-                          {usuario.estado === "Activo"
-                            ? "Inactivar"
-                            : "Activar"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+        <footer className="pie-pagina">
+          <span>SAIYAGYM</span>
+          <span>
+            {modulo.nombre} · Sprint {modulo.sprint}
+          </span>
+        </footer>
       </main>
     </div>
   );
