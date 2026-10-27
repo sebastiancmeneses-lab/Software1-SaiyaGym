@@ -5,6 +5,8 @@ import logoPequeno from "./assets/logo-pequeno.png";
 import Mensaje from "./components/Mensaje.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import MiRutinaPage from "./pages/MiRutinaPage.jsx";
+import MisPagosPage from "./pages/MisPagosPage.jsx";
+import PagosPage from "./pages/PagosPage.jsx";
 import RutinasPage from "./pages/RutinasPage.jsx";
 import UsuariosPage from "./pages/UsuariosPage.jsx";
 
@@ -13,12 +15,14 @@ import UsuariosPage from "./pages/UsuariosPage.jsx";
 const modulosPorRol = {
   administrador: [
     { id: "usuarios", nombre: "Usuarios", sprint: 1, Pagina: UsuariosPage },
+    { id: "pagos", nombre: "Pagos", sprint: 3, Pagina: PagosPage },
   ],
   entrenador: [
     { id: "rutinas", nombre: "Rutinas", sprint: 2, Pagina: RutinasPage },
   ],
   usuario: [
     { id: "mi-rutina", nombre: "Mi rutina", sprint: 2, Pagina: MiRutinaPage },
+    { id: "mis-pagos", nombre: "Mis pagos", sprint: 3, Pagina: MisPagosPage },
   ],
 };
 

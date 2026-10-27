@@ -111,4 +111,13 @@ export const api = {
   miRutina: {
     consultar: () => solicitar("GET", "/mi-rutina"),
   },
+  pagos: {
+    registrar: (datos) => solicitar("POST", "/pagos", datos),
+    listar: () => solicitar("GET", "/pagos"),
+    usuarios: () => solicitar("GET", "/pagos/usuarios"),
+  },
+  misPagos: {
+    consultar: (periodo) =>
+      solicitar("GET", conParametros("/mis-pagos", periodo ? { periodo } : {})),
+  },
 };

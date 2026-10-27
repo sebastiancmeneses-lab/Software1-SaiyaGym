@@ -10,6 +10,7 @@ Sistema web para la gestión de gimnasios (proyecto universitario de Ingeniería
 |---|---|---|
 | 1 | Gestión de usuarios | E1-HU1 Registrar · E1-HU2 Consultar/buscar · E1-HU3 Actualizar · E1-HU4 Gestionar estado |
 | 2 | Gestión de rutinas | E2-HU1 Crear · E2-HU2 Asignar · E2-HU3 Modificar · E2-HU4 Consultar rutina asignada |
+| 3 (parcial) | Gestión de pagos | E3-HU1 Registrar pago (administrador) · E3-HU2 Historial de pagos (usuario). Pendientes: E3-HU3 y E3-HU4 |
 
 ## Un programa distinto para cada perfil
 
@@ -17,13 +18,13 @@ Hay que **iniciar sesión** (documento + contraseña). Según el rol, la persona
 
 | Perfil | Qué ve | Qué NO puede ver ni usar |
 |---|---|---|
-| **Administrador** | Gestión de usuarios (registrar, buscar, editar, activar/inactivar, asignar contraseña) | Rutinas, asignaciones, "Mi rutina" |
+| **Administrador** | Gestión de usuarios (registrar, buscar, editar, activar/inactivar, asignar contraseña) y registro de pagos | Rutinas, asignaciones, "Mi rutina" |
 | **Entrenador** | Crear/modificar rutinas y asignarlas a usuarios | Gestión de usuarios, "Mi rutina" |
-| **Usuario** | Solo su propia rutina asignada | Todo lo demás |
+| **Usuario** | Solo su propia rutina asignada y su historial de pagos | Todo lo demás |
 
 La restricción **se aplica en el servidor** (la API responde 403 si un perfil llama a rutas que no le corresponden), no solo ocultando botones.
 
-Pagos, membresías, asistencia y rachas (Sprints 3 a 5) **no** están incluidos.
+Del Sprint 3 solo están E3-HU1 y E3-HU2; faltan E3-HU3 y E3-HU4. Membresías, asistencia y rachas (Sprints 4 y 5) **no** están incluidos.
 
 ## Estructura
 
@@ -114,7 +115,7 @@ Son solo para pruebas: cámbialas antes de usar el sistema con datos reales.
 ## API REST
 
 Todas las rutas, salvo `/api/salud` y `/api/auth/login`, exigen el encabezado `Authorization: Bearer <token>`.
-`/api/usuarios` es solo del administrador; `/api/rutinas` y `/api/asignaciones`, solo del entrenador; `/api/mi-rutina`, solo del usuario.
+`/api/usuarios` es solo del administrador; `/api/rutinas` y `/api/asignaciones`, solo del entrenador; `/api/mi-rutina` y `/api/mis-pagos`, solo del usuario; `/api/pagos`, solo del administrador.
 
 Respuestas exitosas: `{ "ok": true, "data": ..., "mensaje": "..." }`
 Errores: `{ "ok": false, "error": { "codigo": "...", "mensaje": "...", "campos": [] } }`
@@ -128,6 +129,10 @@ Errores: `{ "ok": false, "error": { "codigo": "...", "mensaje": "...", "campos":
 | GET | `/api/usuarios/:id` | consultar un usuario |
 | PUT | `/api/usuarios/:id` | E1-HU3 actualizar |
 | PATCH | `/api/usuarios/:id/estado` | E1-HU4 activar / inactivar (`{ "estado": "Activo" \| "Inactivo" }`) |
+| POST | `/api/pagos` | E3-HU1 registrar pago (`usuario_id`, `valor`, `periodo` AAAA-MM, `concepto` opcional) |
+| GET | `/api/pagos` | últimos pagos registrados (administrador) |
+| GET | `/api/pagos/usuarios` | usuarios a quienes registrar pagos |
+| GET | `/api/mis-pagos?periodo=AAAA-MM` | E3-HU2 mi historial de pagos (usuario) |
 | POST | `/api/rutinas` | E2-HU1 crear rutina |
 | GET | `/api/rutinas` · `/api/rutinas/:id` | listar / consultar |
 | PUT | `/api/rutinas/:id` | E2-HU3 modificar rutina |

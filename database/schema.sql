@@ -1,6 +1,7 @@
 -- =====================================================================
 -- SAIYAGYM - Esquema de base de datos (PostgreSQL)
--- Cubre: Sprint 1 (usuarios) y Sprint 2 (rutinas y su asignación).
+-- Cubre: Sprint 1 (usuarios), Sprint 2 (rutinas y su asignación) y
+-- Sprint 3 (obligaciones y pagos).
 -- Es idempotente: se puede ejecutar varias veces sin borrar datos.
 -- =====================================================================
 
@@ -84,3 +85,44 @@ CREATE UNIQUE INDEX IF NOT EXISTS asignaciones_una_vigente_por_usuario
 CREATE INDEX IF NOT EXISTS rutina_ejercicios_rutina_idx ON rutina_ejercicios (rutina_id);
 CREATE INDEX IF NOT EXISTS asignaciones_rutina_rutina_idx ON asignaciones_rutina (rutina_id);
 CREATE INDEX IF NOT EXISTS rutinas_entrenador_idx ON rutinas (entrenador_id);
+
+-- ---------------------------------------------------------------------
+-- OBLIGACIONES DE PAGO (E3)
+-- Lo que un usuario debe pagar en un período (ej. la mensualidad de
+-- 2026-10). Solo puede existir una obligación por usuario, concepto y
+-- período: eso evita que el mismo pago se registre dos veces (E3-HU1).
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS obligaciones (
+    id          SERIAL PRIMARY KEY,
+    usuario_id  INTEGER       NOT NULL REFERENCES usuarios (id),
+    concepto    VARCHAR(80)   NOT NULL,
+    periodo     CHAR(7)       NOT NULL,
+    valor       NUMERIC(12,2) NOT NULL,
+    estado      VARCHAR(10)   NOT NULL DEFAULT 'Pendiente',
+    creado_en   TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    CONSTRAINT obligaciones_uk         UNIQUE (usuario_id, concepto, periodo),
+    CONSTRAINT obligaciones_concepto_ck CHECK (length(btrim(concepto)) > 0),
+    CONSTRAINT obligaciones_periodo_ck  CHECK (periodo ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'),
+    CONSTRAINT obligaciones_valor_ck    CHECK (valor > 0),
+    CONSTRAINT obligaciones_estado_ck   CHECK (estado IN ('Pendiente', 'Pagada'))
+);
+
+-- ---------------------------------------------------------------------
+-- PAGOS (E3-HU1, E3-HU2)
+-- Cada pago salda exactamente una obligación (obligacion_id es único).
+-- Guarda la fecha, el valor y quién lo registró (el administrador).
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS pagos (
+    id              SERIAL PRIMARY KEY,
+    obligacion_id   INTEGER       NOT NULL REFERENCES obligaciones (id),
+    usuario_id      INTEGER       NOT NULL REFERENCES usuarios (id),
+    valor           NUMERIC(12,2) NOT NULL,
+    fecha_pago      DATE          NOT NULL DEFAULT CURRENT_DATE,
+    registrado_por  INTEGER       NOT NULL REFERENCES usuarios (id),
+    creado_en       TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    CONSTRAINT pagos_obligacion_uk UNIQUE (obligacion_id),
+    CONSTRAINT pagos_valor_ck      CHECK (valor > 0)
+);
+
+CREATE INDEX IF NOT EXISTS obligaciones_usuario_idx ON obligaciones (usuario_id);
+CREATE INDEX IF NOT EXISTS pagos_usuario_idx ON pagos (usuario_id, fecha_pago DESC);
